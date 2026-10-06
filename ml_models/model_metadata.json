@@ -1,0 +1,53 @@
+{
+  "trained_at": "2026-09-29T15:16:55.709171",
+  "n_estimators": 100,
+  "max_depth": 15,
+  "min_samples_split": 5,
+  "r2_score": 0.9567,
+  "mae": 4.59,
+  "rmse": 6.71,
+  "total_samples": 9000,
+  "feature_importances": [
+    {
+      "feature": "historical_7d_avg",
+      "importance": 0.757
+    },
+    {
+      "feature": "temperature",
+      "importance": 0.0645
+    },
+    {
+      "feature": "weather_condition",
+      "importance": 0.0616
+    },
+    {
+      "feature": "promotion_active",
+      "importance": 0.0487
+    },
+    {
+      "feature": "holiday_flag",
+      "importance": 0.0339
+    },
+    {
+      "feature": "meal_shift",
+      "importance": 0.0179
+    },
+    {
+      "feature": "dish_index",
+      "importance": 0.0067
+    },
+    {
+      "feature": "active_platforms",
+      "importance": 0.0051
+    },
+    {
+      "feature": "day_of_week",
+      "importance": 0.0038
+    },
+    {
+      "feature": "is_weekend",
+      "importance": 0.0007
+    }
+  ],
+  "has_sklearn": true
+}

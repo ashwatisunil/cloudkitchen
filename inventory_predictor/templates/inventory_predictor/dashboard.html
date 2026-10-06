@@ -1,0 +1,305 @@
+{% extends 'inventory_predictor/base.html' %}
+
+{% block title %}Dashboard - Cloud Kitchen Inventory System{% endblock %}
+{% block page_title %}Operational Dashboard{% endblock %}
+
+{% block content %}
+<!-- Top Metric Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-2">
+        <div class="stat-card h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Total Ingredients</span>
+                <div class="stat-icon icon-blue"><i class="fa-solid fa-boxes-stacked"></i></div>
+            </div>
+            <div class="stat-value">{{ total_ingredients }}</div>
+            <div class="text-muted small mt-1"><i class="fa-solid fa-list-check me-1"></i> Active in Stock</div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-2">
+        <div class="stat-card h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Low Stock</span>
+                <div class="stat-icon icon-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            </div>
+            <div class="stat-value text-danger">{{ low_stock_count }}</div>
+            <div class="small mt-1 text-danger fw-semibold">
+                <a href="{% url 'ingredient_list' %}?status=low_stock" class="text-danger text-decoration-none">Needs Reorder &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-2">
+        <div class="stat-card h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Expiring Soon</span>
+                <div class="stat-icon icon-yellow"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            </div>
+            <div class="stat-value text-warning">{{ expiring_soon_count }}</div>
+            <div class="small mt-1 text-warning fw-semibold">
+                <a href="{% url 'ingredient_list' %}?status=expiring" class="text-warning text-decoration-none">Within 7 Days &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-2">
+        <div class="stat-card h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Menu Dishes</span>
+                <div class="stat-icon icon-green"><i class="fa-solid fa-utensils"></i></div>
+            </div>
+            <div class="stat-value">{{ total_menu_items }}</div>
+            <div class="text-muted small mt-1"><i class="fa-solid fa-book-open me-1"></i> Available Dishes</div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-2">
+        <div class="stat-card h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Today's Sales</span>
+                <div class="stat-icon icon-purple"><i class="fa-solid fa-cash-register"></i></div>
+            </div>
+            <div class="stat-value">{{ today_sales_qty }}</div>
+            <div class="text-muted small mt-1">₹{{ today_sales_rev }} Total Rev</div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-2">
+        <div class="stat-card h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Predicted Demand</span>
+                <div class="stat-icon icon-orange"><i class="fa-solid fa-brain"></i></div>
+            </div>
+            <div class="stat-value text-primary">{{ total_predicted_demand }}</div>
+            <div class="small mt-1 text-primary fw-semibold">
+                <a href="{% url 'demand_prediction' %}" class="text-primary text-decoration-none">Tomorrow's Est. &rarr;</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-lg-8">
+        <div class="card-box h-100 mb-0">
+            <div class="card-box-header">
+                <h6 class="card-box-title"><i class="fa-solid fa-chart-line text-primary me-2"></i> 14-Day Sales Trend (Historical Demand)</h6>
+                <a href="{% url 'sales_list' %}" class="btn btn-sm btn-light">View Sales History</a>
+            </div>
+            <div style="height: 280px;">
+                <canvas id="salesTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card-box h-100 mb-0">
+            <div class="card-box-header">
+                <h6 class="card-box-title"><i class="fa-solid fa-fire text-danger me-2"></i> Top Selling Dishes</h6>
+                <a href="{% url 'analytics' %}" class="btn btn-sm btn-light">Analytics</a>
+            </div>
+            <div style="height: 280px;">
+                <canvas id="topItemsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tables & Warnings Row -->
+<div class="row g-3 mb-4">
+    <!-- Low Stock Alerts -->
+    <div class="col-12 col-lg-6">
+        <div class="card-box h-100 mb-0">
+            <div class="card-box-header">
+                <h6 class="card-box-title text-danger"><i class="fa-solid fa-circle-exclamation me-2"></i> Low Stock & Expiry Warnings</h6>
+                <a href="{% url 'reorder_recommendations' %}" class="btn btn-sm btn-outline-danger">Stock Reorder AI &rarr;</a>
+            </div>
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Ingredient</th>
+                            <th>Current Stock</th>
+                            <th>Min Stock</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ing in low_stock_list %}
+                        <tr>
+                            <td class="fw-bold">{{ ing.name }}</td>
+                            <td><span class="text-danger fw-bold">{{ ing.current_quantity }}</span> {{ ing.unit }}</td>
+                            <td>{{ ing.min_stock_level }} {{ ing.unit }}</td>
+                            <td><span class="badge badge-status badge-low-stock">Low Stock</span></td>
+                        </tr>
+                        {% empty %}
+                            {% for ing in expiring_soon_list %}
+                            <tr>
+                                <td class="fw-bold">{{ ing.name }}</td>
+                                <td>{{ ing.current_quantity }} {{ ing.unit }}</td>
+                                <td>Expires: {{ ing.expiry_date }}</td>
+                                <td><span class="badge badge-status badge-expiring">Expiring Soon</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">
+                                    <i class="fa-solid fa-circle-check text-success me-1"></i> All stock levels are sufficient and fresh!
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Inventory Transactions -->
+    <div class="col-12 col-lg-6">
+        <div class="card-box h-100 mb-0">
+            <div class="card-box-header">
+                <h6 class="card-box-title"><i class="fa-solid fa-list-check text-secondary me-2"></i> Recent Stock Activity</h6>
+                <a href="{% url 'inventory_transactions' %}" class="btn btn-sm btn-light">View All Activity</a>
+            </div>
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Ingredient</th>
+                            <th>Quantity</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in recent_transactions %}
+                        <tr>
+                            <td>
+                                {% if tx.transaction_type == 'PURCHASE' %}
+                                    <span class="badge bg-success"><i class="fa-solid fa-arrow-down me-1"></i> Inward</span>
+                                {% elif tx.transaction_type == 'USAGE' %}
+                                    <span class="badge bg-info text-dark"><i class="fa-solid fa-arrow-up me-1"></i> Usage</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-trash me-1"></i> Wastage</span>
+                                {% endif %}
+                            </td>
+                            <td class="fw-semibold">{{ tx.ingredient.name }}</td>
+                            <td>{{ tx.quantity }} {{ tx.ingredient.unit }}</td>
+                            <td class="text-muted small">{{ tx.created_at|date:"M d, H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-3">No recent inventory activity logged.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Demand Predictions Preview Table -->
+<div class="card-box">
+    <div class="card-box-header">
+        <h6 class="card-box-title"><i class="fa-solid fa-brain text-primary me-2"></i> Tomorrow's AI Demand Prediction Preview</h6>
+        <a href="{% url 'demand_prediction' %}" class="btn btn-sm btn-primary"><i class="fa-solid fa-sliders me-1"></i> Custom Predictor & Features</a>
+    </div>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Menu Dish</th>
+                    <th>Category</th>
+                    <th>Selling Price</th>
+                    <th>Predicted Demand (Orders)</th>
+                    <th>Estimated Revenue</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in predictions %}
+                <tr>
+                    <td class="fw-bold text-dark">{{ p.item_name }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ p.category }}</span></td>
+                    <td>₹{{ p.selling_price }}</td>
+                    <td><span class="badge bg-primary fs-6 px-3 py-1">{{ p.predicted_demand }} units</span></td>
+                    <td class="fw-semibold text-success">₹{% widthratio p.predicted_demand 1 p.selling_price %}</td>
+                    <td>
+                        <a href="{% url 'reorder_recommendations' %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fa-solid fa-list-check me-1"></i> Check BOM & Stock
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Sales Trend Chart
+    const salesDates = {{ chart_dates_json|safe }};
+    const salesValues = {{ chart_sales_json|safe }};
+
+    const ctxTrend = document.getElementById('salesTrendChart').getContext('2d');
+    new Chart(ctxTrend, {
+        type: 'line',
+        data: {
+            labels: salesDates,
+            datasets: [{
+                label: 'Quantity Sold',
+                data: salesValues,
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.35,
+                pointRadius: 4,
+                pointBackgroundColor: '#2563eb'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // Top Items Chart
+    const itemLabels = {{ top_item_labels_json|safe }};
+    const itemCounts = {{ top_item_counts_json|safe }};
+
+    const ctxTop = document.getElementById('topItemsChart').getContext('2d');
+    new Chart(ctxTop, {
+        type: 'bar',
+        data: {
+            labels: itemLabels,
+            datasets: [{
+                label: 'Total Orders',
+                data: itemCounts,
+                backgroundColor: ['#2563eb', '#38bdf8', '#34d399', '#fbbf24', '#f87171'],
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

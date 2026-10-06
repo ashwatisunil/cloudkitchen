@@ -1,0 +1,108 @@
+{% extends 'inventory_predictor/base.html' %}
+
+{% block title %}Menu Items & Recipes - Cloud Kitchen{% endblock %}
+{% block page_title %}Menu Items & Recipe Management{% endblock %}
+
+{% block content %}
+<div class="card-box">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h5 class="fw-bold m-0 text-dark">Kitchen Menu Catalogue</h5>
+            <p class="text-muted small m-0">Manage dishes, selling prices, availability status, and ingredient recipes (BOM).</p>
+        </div>
+        {% if is_admin %}
+        <div>
+            <a href="{% url 'menu_add' %}" class="btn btn-primary shadow-sm">
+                <i class="fa-solid fa-plus me-1"></i> Add Menu Item
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Search & Filter -->
+    <form method="GET" action="{% url 'menu_list' %}" class="row g-2 mb-4 bg-light p-3 rounded-3 border">
+        <div class="col-12 col-md-6">
+            <input type="text" name="search" value="{{ search_query }}" class="form-control" placeholder="Search menu item name...">
+        </div>
+        <div class="col-12 col-md-4">
+            <select name="category" class="form-select">
+                <option value="">All Categories</option>
+                {% for cat_val, cat_label in categories %}
+                    <option value="{{ cat_val }}" {% if category_filter == cat_val %}selected{% endif %}>{{ cat_label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-secondary w-100"><i class="fa-solid fa-filter me-1"></i> Filter</button>
+            <a href="{% url 'menu_list' %}" class="btn btn-outline-secondary" title="Reset"><i class="fa-solid fa-rotate-left"></i></a>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Menu Item Name</th>
+                    <th>Category</th>
+                    <th>Selling Price</th>
+                    <th>Status</th>
+                    <th>Recipe Ingredients Required</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in menu_items %}
+                <tr>
+                    <td>
+                        <div class="fw-bold text-dark fs-6">{{ item.name }}</div>
+                        <div class="text-muted small">{{ item.description|default:"No description provided." }}</div>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ item.category }}</span></td>
+                    <td class="fw-bold text-success fs-6">₹{{ item.selling_price }}</td>
+                    <td>
+                        {% if item.is_available %}
+                            <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Available</span>
+                        {% else %}
+                            <span class="badge bg-secondary"><i class="fa-solid fa-ban me-1"></i> Unavailable</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-1 align-items-center">
+                            {% for r in item.recipe_items.all %}
+                                <span class="badge bg-light text-dark border">
+                                    {{ r.ingredient.name }}: <strong>{{ r.quantity_required }} {{ r.ingredient.unit }}</strong>
+                                </span>
+                            {% empty %}
+                                <span class="text-warning small"><i class="fa-solid fa-triangle-exclamation me-1"></i> No recipe added!</span>
+                            {% endfor %}
+                            <a href="{% url 'recipe_manage' item.pk %}" class="btn btn-sm btn-link text-decoration-none p-0 ms-1" title="Edit Recipe">
+                                <i class="fa-solid fa-sliders"></i> Recipe
+                            </a>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'recipe_manage' item.pk %}" class="btn btn-sm btn-outline-secondary" title="Manage Recipe">
+                                <i class="fa-solid fa-mortar-pestle me-1"></i> Recipe
+                            </a>
+                            {% if is_admin %}
+                            <a href="{% url 'menu_edit' item.pk %}" class="btn btn-sm btn-outline-primary" title="Edit Item">
+                                <i class="fa-solid fa-pen"></i>
+                            </a>
+                            <a href="{% url 'menu_delete' item.pk %}" class="btn btn-sm btn-outline-danger" title="Delete Item">
+                                <i class="fa-solid fa-trash"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">No menu items found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

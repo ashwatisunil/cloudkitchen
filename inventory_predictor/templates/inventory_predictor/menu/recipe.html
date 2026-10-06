@@ -1,0 +1,86 @@
+{% extends 'inventory_predictor/base.html' %}
+
+{% block title %}Manage Recipe - {{ menu_item.name }}{% endblock %}
+{% block page_title %}Dish Recipe Bill of Materials (BOM){% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-9">
+        <div class="card-box mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h4 class="fw-bold text-dark m-0">{{ menu_item.name }}</h4>
+                    <span class="badge bg-light text-dark border me-2">{{ menu_item.category }}</span>
+                    <span class="text-success fw-bold">₹{{ menu_item.selling_price }}</span>
+                </div>
+                <a href="{% url 'menu_list' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Back to Menu Catalogue
+                </a>
+            </div>
+            <p class="text-muted small m-0">{{ menu_item.description|default:"No description provided." }}</p>
+        </div>
+
+        {% if is_admin %}
+        <div class="card-box mb-4 bg-light border">
+            <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-plus-circle text-primary me-2"></i> Add Ingredient to Recipe</h6>
+            <form method="POST" class="row g-3 align-items-end">
+                {% csrf_token %}
+                <div class="col-12 col-md-6">
+                    <label class="form-label text-secondary small fw-semibold">Select Raw Ingredient</label>
+                    {{ form.ingredient }}
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label text-secondary small fw-semibold">Required Quantity Per Dish</label>
+                    {{ form.quantity_required }}
+                </div>
+                <div class="col-12 col-md-2">
+                    <button type="submit" class="btn btn-primary w-100 shadow-sm">
+                        <i class="fa-solid fa-plus me-1"></i> Add
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="card-box">
+            <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-list-check me-2 text-secondary"></i> Recipe Ingredients List</h6>
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Ingredient Name</th>
+                            <th>Unit</th>
+                            <th>Qty Required per Dish</th>
+                            <th>Est. Ingredient Cost / Dish</th>
+                            {% if is_admin %}<th>Action</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in recipe_items %}
+                        <tr>
+                            <td class="fw-bold text-dark">{{ item.ingredient.name }}</td>
+                            <td>{{ item.ingredient.unit }}</td>
+                            <td><span class="badge bg-primary fs-6">{{ item.quantity_required }}</span> {{ item.ingredient.unit }}</td>
+                            <td>₹{% widthratio item.quantity_required 1 item.ingredient.unit_cost %}</td>
+                            {% if is_admin %}
+                            <td>
+                                <a href="{% url 'recipe_delete' item.pk %}" class="btn btn-sm btn-outline-danger" title="Remove ingredient from recipe">
+                                    <i class="fa-solid fa-trash me-1"></i> Remove
+                                </a>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> No ingredients added to this recipe yet! Add ingredients above to enable accurate inventory deduction & ML demand reordering.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

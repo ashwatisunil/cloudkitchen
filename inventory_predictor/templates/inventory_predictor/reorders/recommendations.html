@@ -1,0 +1,121 @@
+{% extends 'inventory_predictor/base.html' %}
+
+{% block title %}Stock Reorder Recommendations - Cloud Kitchen{% endblock %}
+{% block page_title %}AI Stock Reorder & Procurement Recommendations{% endblock %}
+
+{% block content %}
+<!-- Top Summary Row -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-4">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Reorder Required Items</span>
+                <div class="stat-icon icon-red"><i class="fa-solid fa-cart-arrow-down"></i></div>
+            </div>
+            <div class="stat-value text-danger">{{ reorder_required_count }}</div>
+            <div class="text-muted small mt-1">Ingredients facing stock shortfalls for target demand</div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Est. Reorder Procurement Cost</span>
+                <div class="stat-icon icon-yellow"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+            </div>
+            <div class="stat-value text-warning">₹{{ total_estimated_reorder_cost }}</div>
+            <div class="text-muted small mt-1">Estimated cost to replenish required ingredients</div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Target Date</span>
+                <div class="stat-icon icon-blue"><i class="fa-solid fa-calendar-day"></i></div>
+            </div>
+            <div class="stat-value text-primary fs-5 fw-bold mt-2">{{ target_date_display }}</div>
+            <div class="text-muted small mt-1">Simulated Weather: {{ weather }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card-box mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <h5 class="fw-bold m-0 text-dark"><i class="fa-solid fa-list-check text-primary me-2"></i> Raw Ingredient Reorder Analysis Table</h5>
+        <a href="{% url 'demand_prediction' %}?date={{ target_date_str }}" class="btn btn-outline-primary btn-sm">
+            <i class="fa-solid fa-sliders me-1"></i> Adjust Forecast Date & Features
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Ingredient</th>
+                    <th>Category</th>
+                    <th>Current Stock</th>
+                    <th>Predicted Required Stock</th>
+                    <th>Min Safety Stock</th>
+                    <th>Reorder Status</th>
+                    <th>Suggested Reorder Qty</th>
+                    <th>Est. Purchase Cost</th>
+                    <th>Preferred Supplier</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in recommendations %}
+                <tr class="{% if r.status == 'Reorder Required' %}table-danger bg-opacity-10{% elif r.status == 'Low Stock Warning' %}table-warning bg-opacity-10{% endif %}">
+                    <td class="fw-bold text-dark fs-6">{{ r.ingredient_name }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ r.category }}</span></td>
+                    <td>
+                        <span class="fw-bold {% if r.status == 'Reorder Required' or r.status == 'Low Stock Warning' %}text-danger{% else %}text-dark{% endif %} fs-6">
+                            {{ r.current_stock }}
+                        </span> {{ r.unit }}
+                    </td>
+                    <td><span class="fw-bold text-primary fs-6">{{ r.predicted_required }}</span> {{ r.unit }}</td>
+                    <td class="text-muted">{{ r.min_stock }} {{ r.unit }}</td>
+                    <td>
+                        {% if r.status == 'Reorder Required' %}
+                            <span class="badge badge-status badge-low-stock"><i class="fa-solid fa-triangle-exclamation me-1"></i> Reorder Required</span>
+                        {% elif r.status == 'Low Stock Warning' %}
+                            <span class="badge badge-status badge-expiring"><i class="fa-solid fa-triangle-exclamation me-1"></i> Low Stock Warning</span>
+                        {% else %}
+                            <span class="badge badge-status badge-ok"><i class="fa-solid fa-check me-1"></i> Sufficient</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if r.suggested_reorder > 0 %}
+                            <span class="badge bg-danger fs-6 px-3 py-1">+{{ r.suggested_reorder }} {{ r.unit }}</span>
+                        {% else %}
+                            <span class="text-muted">0 {{ r.unit }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="fw-bold">
+                        {% if r.estimated_cost > 0 %}
+                            ₹{{ r.estimated_cost }}
+                        {% else %}
+                            ₹0.00
+                        {% endif %}
+                    </td>
+                    <td class="text-muted small">{{ r.supplier_name }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-4 text-muted">No raw materials found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card bg-light border p-3 rounded-3">
+    <div class="fw-bold text-dark mb-1"><i class="fa-solid fa-lightbulb text-warning me-1"></i> How Reorder Recommendations Work:</div>
+    <div class="small text-muted">
+        1. <strong>Predicted Demand:</strong> ML Random Forest calculates projected sales per menu item.<br>
+        2. <strong>BOM Calculation:</strong> Required ingredient stock = sum of (Predicted Sales &times; Quantity per dish).<br>
+        3. <strong>Shortfall Check:</strong> If Current Stock &lt; Required Stock or Min Stock Level, system triggers <strong>"Reorder Required"</strong> and calculates suggested purchase quantity.
+    </div>
+</div>
+{% endblock %}

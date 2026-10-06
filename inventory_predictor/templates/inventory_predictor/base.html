@@ -1,0 +1,273 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cloud Kitchen Inventory & Demand Prediction{% endblock %}</title>
+
+    <!-- Local Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+    <!-- Local FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="{% static 'css/fontawesome.min.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <!-- Inline Core CSS to ensure styling works 100% even if static cache is stale -->
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-bg: #1e293b;
+            --sidebar-color: #94a3b8;
+            --sidebar-active-bg: #2563eb;
+            --sidebar-active-color: #ffffff;
+            --body-bg: #f8fafc;
+            --card-border-radius: 12px;
+            --primary-color: #2563eb;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--body-bg);
+            color: #334155;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        ul, li { list-style: none !important; padding-left: 0 !important; }
+        #sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: var(--sidebar-bg);
+            color: var(--sidebar-color);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
+        }
+        .sidebar-header { padding: 1.5rem 1.25rem; border-bottom: 1px solid #334155; }
+        .sidebar-brand { font-size: 1.2rem; font-weight: 700; color: #ffffff; text-decoration: none; display: flex; align-items: center; gap: 0.6rem; }
+        .sidebar-brand i { color: #38bdf8; font-size: 1.4rem; }
+        .sidebar-menu { list-style: none !important; padding: 1rem 0.75rem !important; margin: 0 !important; flex-grow: 1; overflow-y: auto; }
+        .menu-heading { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; padding: 0.75rem 1rem 0.25rem 1rem; font-weight: 600; }
+        .sidebar-item { margin-bottom: 0.2rem; }
+        .sidebar-link { display: flex; align-items: center; gap: 0.8rem; padding: 0.65rem 1rem; color: var(--sidebar-color); text-decoration: none; border-radius: 8px; font-size: 0.92rem; font-weight: 500; }
+        .sidebar-link:hover { background: #334155; color: #ffffff; }
+        .sidebar-link.active { background: var(--sidebar-active-bg); color: var(--sidebar-active-color); font-weight: 600; }
+        .sidebar-link i { font-size: 1.1rem; width: 20px; text-align: center; }
+        .sidebar-user { padding: 1rem 1.25rem; border-top: 1px solid #334155; background: #111827; }
+        #content { margin-left: var(--sidebar-width); min-height: 100vh; padding: 2rem; }
+        .navbar-custom { background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-radius: 12px; padding: 0.75rem 1.5rem; margin-bottom: 1.5rem; }
+        .stat-card { background: #ffffff; border-radius: var(--card-border-radius); padding: 1.25rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); }
+        .stat-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+        .icon-blue { background: #dbeafe; color: #2563eb; }
+        .icon-red { background: #fee2e2; color: #dc2626; }
+        .icon-yellow { background: #fef3c7; color: #d97706; }
+        .icon-green { background: #dcfce7; color: #16a34a; }
+        .icon-purple { background: #f3e8ff; color: #9333ea; }
+        .icon-orange { background: #ffedd5; color: #ea580c; }
+        .stat-value { font-size: 1.75rem; font-weight: 700; color: #0f172a; line-height: 1.2; margin-top: 0.4rem; }
+        .stat-label { font-size: 0.85rem; color: #64748b; font-weight: 500; }
+        .card-box { background: #ffffff; border-radius: var(--card-border-radius); border: 1px solid #e2e8f0; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .card-box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+        .card-box-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin: 0; }
+        .custom-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .custom-table th { background: #f8fafc; color: #475569; font-weight: 600; font-size: 0.82rem; text-transform: uppercase; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0; }
+        .custom-table td { padding: 0.85rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; vertical-align: middle; }
+        .badge-status { padding: 0.35em 0.7em; font-size: 0.78rem; font-weight: 600; border-radius: 6px; }
+        .badge-low-stock { background: #fee2e2; color: #991b1b; }
+        .badge-expiring { background: #fef3c7; color: #92400e; }
+        .badge-ok { background: #dcfce7; color: #166534; }
+        .badge-admin { background: #e0e7ff; color: #3730a3; }
+        .badge-staff { background: #f3f4f6; color: #374151; }
+        @media (max-width: 991px) {
+            #sidebar { margin-left: -260px; }
+            #sidebar.active { margin-left: 0; }
+            #content { margin-left: 0; padding: 1rem; }
+        }
+    </style>
+
+    <!-- Chart.js -->
+    <script src="{% static 'js/chart.min.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <a href="{% url 'dashboard' %}" class="sidebar-brand">
+                <i class="fa-solid fa-utensils"></i>
+                <span>Cloud Kitchen AI</span>
+            </a>
+        </div>
+
+        <ul class="sidebar-menu">
+            <li class="menu-heading">Main</li>
+            <li class="sidebar-item">
+                <a href="{% url 'dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-gauge"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            <li class="menu-heading">Inventory & Operations</li>
+            <li class="sidebar-item">
+                <a href="{% url 'ingredient_list' %}" class="sidebar-link {% if 'ingredient' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-carrot"></i>
+                    <span>Ingredients Stock</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'menu_list' %}" class="sidebar-link {% if 'menu' in request.resolver_match.url_name or 'recipe' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span>Menu Items & Recipe</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'inventory_status' %}" class="sidebar-link {% if 'inventory' in request.resolver_match.url_name or 'add_stock' in request.resolver_match.url_name or 'record_usage' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                    <span>Stock Transactions</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'wastage_list' %}" class="sidebar-link {% if 'wastage' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>Wastage Management</span>
+                </a>
+            </li>
+
+            {% if user.is_superuser or user.profile.role == 'ADMIN' %}
+            <li class="sidebar-item">
+                <a href="{% url 'supplier_list' %}" class="sidebar-link {% if 'supplier' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-truck-field"></i>
+                    <span>Suppliers</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <li class="menu-heading">ML Demand & Sales</li>
+            <li class="sidebar-item">
+                <a href="{% url 'sales_list' %}" class="sidebar-link {% if 'sales' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-receipt"></i>
+                    <span>Sales History</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'demand_prediction' %}" class="sidebar-link {% if 'demand_prediction' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-brain"></i>
+                    <span>Demand Prediction</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'reorder_recommendations' %}" class="sidebar-link {% if 'reorders' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    <span>Stock Recommendations</span>
+                </a>
+            </li>
+
+            <li class="menu-heading">Analytics & Reports</li>
+            <li class="sidebar-item">
+                <a href="{% url 'analytics' %}" class="sidebar-link {% if 'analytics' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Analytics</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'reports' %}" class="sidebar-link {% if 'reports' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-file-invoice"></i>
+                    <span>Reports</span>
+                </a>
+            </li>
+
+            {% if user.is_superuser or user.profile.role == 'ADMIN' %}
+            <li class="menu-heading">Administration</li>
+            <li class="sidebar-item">
+                <a href="{% url 'user_list' %}" class="sidebar-link {% if 'user' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-users-gear"></i>
+                    <span>Manage Users</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+
+        <!-- Sidebar User Footer -->
+        <div class="sidebar-user">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="fw-bold text-white small">{{ user.get_full_name|default:user.username }}</div>
+                    <div class="text-muted text-capitalize" style="font-size: 0.75rem;">
+                        {% if user.is_superuser or user.profile.role == 'ADMIN' %}
+                            <span class="badge badge-admin">Admin / Manager</span>
+                        {% else %}
+                            <span class="badge badge-staff">Kitchen Staff</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light" title="Logout">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Main Content Container -->
+    <main id="content" {% if not user.is_authenticated %}style="margin-left: 0;"{% endif %}>
+        {% if user.is_authenticated %}
+        <!-- Top Navbar -->
+        <div class="navbar-custom d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-light d-lg-none" id="sidebarToggle">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <h5 class="m-0 fw-bold text-dark">{% block page_title %}Dashboard{% endblock %}</h5>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-muted small d-none d-md-inline">
+                    <i class="fa-regular fa-calendar-check me-1"></i> {% now "l, F j, Y" %}
+                </span>
+                <span class="badge bg-primary rounded-pill px-3 py-2">
+                    <i class="fa-solid fa-cloud me-1"></i> Kitchen Active
+                </span>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Alert Notifications -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm" role="alert">
+                    {% if message.tags == 'error' %}
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    {% elif message.tags == 'success' %}
+                        <i class="fa-solid fa-circle-check me-2"></i>
+                    {% else %}
+                        <i class="fa-solid fa-circle-info me-2"></i>
+                    {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{% static 'js/main.js' %}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

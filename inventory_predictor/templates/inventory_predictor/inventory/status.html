@@ -1,0 +1,93 @@
+{% extends 'inventory_predictor/base.html' %}
+
+{% block title %}Inventory & Stock Status - Cloud Kitchen{% endblock %}
+{% block page_title %}Inventory & Stock Status{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-4">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Total Stock Valuation</span>
+                <div class="stat-icon icon-green"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+            </div>
+            <div class="stat-value">₹{{ total_stock_value }}</div>
+            <div class="text-muted small mt-1">Total value of current raw materials</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Low Stock Warnings</span>
+                <div class="stat-icon icon-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            </div>
+            <div class="stat-value text-danger">{{ low_stock_count }}</div>
+            <div class="text-muted small mt-1">Ingredients below safety thresholds</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Quick Actions</span>
+                <div class="stat-icon icon-blue"><i class="fa-solid fa-bolt"></i></div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+                <a href="{% url 'add_stock' %}" class="btn btn-sm btn-primary w-50"><i class="fa-solid fa-plus me-1"></i> Add Stock</a>
+                <a href="{% url 'record_usage' %}" class="btn btn-sm btn-outline-dark w-50"><i class="fa-solid fa-minus me-1"></i> Record Usage</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card-box">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="fw-bold m-0 text-dark">Current Raw Material Stock</h5>
+        <a href="{% url 'inventory_transactions' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fa-solid fa-clock-rotate-left me-1"></i> View Transaction History
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Ingredient</th>
+                    <th>Category</th>
+                    <th>Current Quantity</th>
+                    <th>Safety Threshold</th>
+                    <th>Unit Cost</th>
+                    <th>Stock Value</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ing in ingredients %}
+                <tr>
+                    <td class="fw-bold text-dark">{{ ing.name }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ ing.category }}</span></td>
+                    <td>
+                        <span class="fs-6 fw-bold {% if ing.is_low_stock %}text-danger{% else %}text-dark{% endif %}">
+                            {{ ing.current_quantity }}
+                        </span> {{ ing.unit }}
+                    </td>
+                    <td class="text-muted">{{ ing.min_stock_level }} {{ ing.unit }}</td>
+                    <td>₹{{ ing.unit_cost }}</td>
+                    <td class="fw-semibold">₹{{ ing.total_value }}</td>
+                    <td>
+                        {% if ing.is_low_stock %}
+                            <span class="badge badge-status badge-low-stock"><i class="fa-solid fa-triangle-exclamation me-1"></i> Low Stock</span>
+                        {% else %}
+                            <span class="badge badge-status badge-ok"><i class="fa-solid fa-check me-1"></i> Normal</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">No stock data available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

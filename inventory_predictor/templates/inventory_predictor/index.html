@@ -1,0 +1,421 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Kitchen Inventory & Demand AI (Random Forest)</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Header Navbar -->
+        <header class="navbar">
+            <div class="brand">
+                <div class="brand-logo">🍳</div>
+                <div class="brand-title">
+                    <h1>CloudKitchen AI</h1>
+                    <span>Inventory & Demand Forecasting Engine</span>
+                </div>
+            </div>
+            
+            <div class="nav-actions">
+                <div class="status-badge">
+                    <div class="status-dot"></div>
+                    <span>Random Forest Model Active</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- KPI Overview Cards -->
+        <section class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span>Projected Shift Orders</span>
+                    <span>📦</span>
+                </div>
+                <div class="kpi-value" id="kpi-orders">--</div>
+                <div class="kpi-subtext">Estimated order demand for current shift</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span>Active Menu Dishes</span>
+                    <span>🍲</span>
+                </div>
+                <div class="kpi-value" id="kpi-dishes">6</div>
+                <div class="kpi-subtext">Multi-brand cloud kitchen items</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span>Critical Reorders</span>
+                    <span>⚠️</span>
+                </div>
+                <div class="kpi-value" id="kpi-reorders" style="color: var(--accent-amber);">--</div>
+                <div class="kpi-subtext">Ingredients below safety stock buffer</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span>Model Accuracy (R²)</span>
+                    <span>🎯</span>
+                </div>
+                <div class="kpi-value" id="kpi-r2" style="color: var(--accent-emerald);">--</div>
+                <div class="kpi-subtext">Random Forest Regressor fit score</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span>Forecast MAE Error</span>
+                    <span>📉</span>
+                </div>
+                <div class="kpi-value" id="kpi-mae" style="color: var(--accent-indigo);">--</div>
+                <div class="kpi-subtext">Mean Absolute Error per dish</div>
+            </div>
+        </section>
+
+        <!-- Navigation Tabs -->
+        <nav class="tabs-nav">
+            <button class="tab-btn active" data-tab="demand-simulator">⚡ Demand Simulator</button>
+            <button class="tab-btn" data-tab="inventory-bom">🛒 Raw Material & Inventory</button>
+            <button class="tab-btn" data-tab="spoilage-radar">🛡️ Waste & Spoilage Radar</button>
+            <button class="tab-btn" data-tab="model-studio">🧠 Random Forest Studio</button>
+            <button class="tab-btn" data-tab="kitchen-prep">👨‍🍳 Kitchen Prep Guide</button>
+        </nav>
+
+        <!-- TAB 1: Real-Time Demand Simulator -->
+        <main id="demand-simulator" class="tab-content active">
+            <div class="grid-2col">
+                <!-- Control Panel -->
+                <div class="panel-card">
+                    <div class="panel-title">
+                        <h2>Operational Parameters</h2>
+                        <span style="font-size:12px; color:var(--accent-indigo);">Live Simulation</span>
+                    </div>
+
+                    <form id="simulator-form" style="display:flex; flex-direction:column; gap:16px;">
+                        <div class="form-group">
+                            <label for="sim-shift">Meal Shift</label>
+                            <select id="sim-shift" class="form-select">
+                                <option value="0">Lunch Shift (11:00 AM - 3:00 PM)</option>
+                                <option value="1" selected>Dinner Peak (6:00 PM - 10:00 PM)</option>
+                                <option value="2">Late Night (10:00 PM - 2:00 AM)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sim-weather">Weather Condition</label>
+                            <select id="sim-weather" class="form-select">
+                                <option value="0">Clear / Fair Weather</option>
+                                <option value="1" selected>Heavy Rain 🌧️ (Surge Delivery)</option>
+                                <option value="2">Heatwave ☀️ (Cool Drinks / Bowls)</option>
+                                <option value="3">Thunderstorm 🌩️</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sim-dow">Day of Week</label>
+                            <select id="sim-dow" class="form-select">
+                                <option value="0">Monday</option>
+                                <option value="1">Tuesday</option>
+                                <option value="2">Wednesday</option>
+                                <option value="3">Thursday</option>
+                                <option value="4" selected>Friday (Weekend Start)</option>
+                                <option value="5">Saturday (Peak Demand)</option>
+                                <option value="6">Sunday</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sim-platforms">Active Delivery Aggregators</label>
+                            <select id="sim-platforms" class="form-select">
+                                <option value="1">1 Platform (Swiggy only)</option>
+                                <option value="2">2 Platforms (Swiggy + Zomato)</option>
+                                <option value="3" selected>3 Platforms (Swiggy + Zomato + UberEats)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sim-temp">Ambient Temperature (°C)</label>
+                            <input type="number" id="sim-temp" class="form-input" value="23.5" step="0.5">
+                        </div>
+
+                        <div class="toggle-group">
+                            <label for="sim-promo" style="font-size:13px; color:var(--text-secondary); cursor:pointer;">Active Promotion Campaign (20% Off)</label>
+                            <input type="checkbox" id="sim-promo" checked style="width:18px; height:18px; accent-color:var(--accent-indigo); cursor:pointer;">
+                        </div>
+
+                        <button type="submit" class="btn-primary">
+                            <span>Forecast Demand with Random Forest</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Demand Outputs & Chart -->
+                <div style="display:flex; flex-direction:column; gap:20px;">
+                    <div class="panel-card">
+                        <div class="panel-title">
+                            <h2>Forecasted Dish Volume (Item Level)</h2>
+                        </div>
+                        <div id="dishes-grid" class="dishes-grid">
+                            <!-- Populated via JavaScript -->
+                        </div>
+                    </div>
+
+                    <div class="panel-card">
+                        <div class="panel-title">
+                            <h2>Demand Forecast Visualization</h2>
+                        </div>
+                        <div class="chart-box">
+                            <canvas id="demandChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- TAB 2: Raw Material BOM & Inventory Intelligence -->
+        <main id="inventory-bom" class="tab-content">
+            <div class="grid-2col">
+                <!-- Raw Material Requirement Breakdown -->
+                <div class="panel-card">
+                    <div class="panel-title">
+                        <h2>Shift Raw Material Requirements</h2>
+                        <span style="font-size:12px; color:var(--accent-emerald);">Auto-Calculated BOM</span>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Ingredient</th>
+                                    <th>Shift Req</th>
+                                    <th>Safety Stock</th>
+                                    <th>Current</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="shift-ingredients-tbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Purchase Orders Generator -->
+                <div style="display:flex; flex-direction:column; gap:20px;">
+                    <div class="panel-card">
+                        <div class="panel-title">
+                            <h2>Automated Purchase Orders (POs)</h2>
+                            <span style="font-size:12px; color:var(--accent-pink);">Safety Stock Triggers</span>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th>Raw Material</th>
+                                        <th>Suggested Order Qty</th>
+                                        <th>Urgency</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="po-tbody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="panel-card">
+                        <div class="panel-title">
+                            <h2>Full Inventory Stock Register</h2>
+                        </div>
+                        <div class="table-container">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ingredient Name</th>
+                                        <th>Current Stock</th>
+                                        <th>Safety Buffer</th>
+                                        <th>Shortfall</th>
+                                        <th>Health</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventory-tbody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- TAB 3: Spoilage & Expiry Radar -->
+        <main id="spoilage-radar" class="tab-content">
+            <div class="panel-card">
+                <div class="panel-title">
+                    <h2>Perishable Ingredient Shelf-Life Radar</h2>
+                    <span style="font-size:12px; color:var(--accent-amber);">Spoilage Prevention Engine</span>
+                </div>
+
+                <div class="dishes-grid">
+                    <div class="dish-card" style="border-left:4px solid var(--accent-pink);">
+                        <div class="dish-info">
+                            <h3>🍄 Fresh Button Mushrooms</h3>
+                            <span>Batch #MUSH-8821 | Expires in 24 Hours</span>
+                        </div>
+                        <div class="dish-demand-badge">
+                            <div class="demand-qty" style="color:var(--accent-pink);">4.2 kg</div>
+                            <div class="demand-unit">At Risk</div>
+                        </div>
+                    </div>
+
+                    <div class="dish-card" style="border-left:4px solid var(--accent-amber);">
+                        <div class="dish-info">
+                            <h3>🥑 Organic Avocados</h3>
+                            <span>Batch #AVO-1049 | Expires in 36 Hours</span>
+                        </div>
+                        <div class="dish-demand-badge">
+                            <div class="demand-qty" style="color:var(--accent-amber);">22 pcs</div>
+                            <div class="demand-unit">At Risk</div>
+                        </div>
+                    </div>
+
+                    <div class="dish-card" style="border-left:4px solid var(--accent-emerald);">
+                        <div class="dish-info">
+                            <h3>🍗 Fresh Marinated Chicken</h3>
+                            <span>Batch #CHK-9912 | Expires in 48 Hours</span>
+                        </div>
+                        <div class="dish-demand-badge">
+                            <div class="demand-qty" style="color:var(--accent-emerald);">18.5 kg</div>
+                            <div class="demand-unit">Optimal Pace</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background:rgba(99, 102, 241, 0.1); border:1px solid rgba(99, 102, 241, 0.3); padding:20px; border-radius:12px; margin-top:10px;">
+                    <h3 style="font-size:15px; color:var(--accent-indigo); margin-bottom:8px;">💡 AI Waste Mitigation Recommendation</h3>
+                    <p style="font-size:14px; color:var(--text-secondary); line-height:1.6;">
+                        Random Forest predicts <strong>Truffle Mushroom Burger</strong> demand will reach 48 portions tonight due to rainy weather. 
+                        Launching a targeted <strong>15% Flash Discount on Mushroom Burgers</strong> will accelerate usage of Batch #MUSH-8821, saving an estimated <strong>$65 in spoilage loss</strong>.
+                    </p>
+                </div>
+            </div>
+        </main>
+
+        <!-- TAB 4: Random Forest Model Studio -->
+        <main id="model-studio" class="tab-content">
+            <div class="grid-2col">
+                <!-- Hyperparameter Tuning Form -->
+                <div class="panel-card">
+                    <div class="panel-title">
+                        <h2>Random Forest Model Controls</h2>
+                    </div>
+
+                    <form id="retrain-form" style="display:flex; flex-direction:column; gap:16px;">
+                        <div class="form-group">
+                            <label for="retrain-trees">Number of Estimators (Trees)</label>
+                            <select id="retrain-trees" class="form-select">
+                                <option value="50">50 Trees (Fast)</option>
+                                <option value="100" selected>100 Trees (Optimal)</option>
+                                <option value="150">150 Trees (High Precision)</option>
+                                <option value="200">200 Trees (Deep Ensemble)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="retrain-depth">Maximum Tree Depth</label>
+                            <select id="retrain-depth" class="form-select">
+                                <option value="8">8 Levels</option>
+                                <option value="12">12 Levels</option>
+                                <option value="15" selected>15 Levels</option>
+                                <option value="20">20 Levels (Deep)</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="background:linear-gradient(135deg, var(--accent-emerald), #059669);">
+                            <span>Re-Train Random Forest Model</span>
+                        </button>
+                    </form>
+
+                    <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+                        <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-secondary);">
+                            <span>R² Score:</span> <strong id="metric-r2" style="color:var(--accent-emerald);">--</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-secondary);">
+                            <span>Mean Absolute Error:</span> <strong id="metric-mae" style="color:var(--text-primary);">--</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-secondary);">
+                            <span>Root Mean Squared Error:</span> <strong id="metric-rmse" style="color:var(--text-primary);">--</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-secondary);">
+                            <span>Training Shift Samples:</span> <strong id="metric-samples" style="color:var(--accent-indigo);">--</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature Importance Chart -->
+                <div class="panel-card">
+                    <div class="panel-title">
+                        <h2>Random Forest Feature Weight Importance</h2>
+                        <span style="font-size:12px; color:var(--text-muted);">Key Demand Drivers</span>
+                    </div>
+
+                    <div class="chart-box">
+                        <canvas id="featureChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- TAB 5: Kitchen Prep Workflow Guide -->
+        <main id="kitchen-prep" class="tab-content">
+            <div class="panel-card">
+                <div class="panel-title">
+                    <h2>👨‍🍳 Cloud Kitchen Morning Batch Prep Schedule</h2>
+                    <span style="font-size:12px; color:var(--accent-emerald);">Chef Action Plan</span>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:16px;">
+                    <div style="background:rgba(17, 24, 39, 0.9); border:1px solid var(--border-glass); padding:16px; border-radius:12px;">
+                        <h3 style="font-size:15px; color:var(--accent-indigo); margin-bottom:6px;">1. Rice & Grain Cooking (8:00 AM)</h3>
+                        <p style="font-size:13.5px; color:var(--text-secondary);">
+                            Prepare <strong>18.5 kg Basmati Rice</strong> for Biryani shift demand (74 portions projected) and <strong>7.2 kg Quinoa/Brown Rice</strong> for Vegan Protein Bowls.
+                        </p>
+                    </div>
+
+                    <div style="background:rgba(17, 24, 39, 0.9); border:1px solid var(--border-glass); padding:16px; border-radius:12px;">
+                        <h3 style="font-size:15px; color:var(--accent-pink); margin-bottom:6px;">2. Meat & Protein Portioning (9:00 AM)</h3>
+                        <p style="font-size:13.5px; color:var(--text-secondary);">
+                            Marinate <strong>14.8 kg Chicken breast/thighs</strong> and shape <strong>55 Burger Patties (180g each)</strong> to meet anticipated dinner rush.
+                        </p>
+                    </div>
+
+                    <div style="background:rgba(17, 24, 39, 0.9); border:1px solid var(--border-glass); padding:16px; border-radius:12px;">
+                        <h3 style="font-size:15px; color:var(--accent-amber); margin-bottom:6px;">3. Dough & Broth Preparation (10:00 AM)</h3>
+                        <p style="font-size:13.5px; color:var(--text-secondary);">
+                            Proof <strong>62 Pizza Dough balls (220g)</strong> and simmer <strong>18.5 Liters Ramen Broth base</strong>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- Main JS -->
+    <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

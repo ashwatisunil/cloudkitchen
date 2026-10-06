@@ -1,0 +1,74 @@
+{% extends 'inventory_predictor/base.html' %}
+
+{% block title %}Food Wastage Tracking - Cloud Kitchen{% endblock %}
+{% block page_title %}Food Wastage & Spoilage Tracking{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-6">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Total Wastage Cost</span>
+                <div class="stat-icon icon-red"><i class="fa-solid fa-receipt"></i></div>
+            </div>
+            <div class="stat-value text-danger">₹{{ total_cost }}</div>
+            <div class="text-muted small mt-1">Cumulative financial loss due to spoilage/expiry</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 d-flex align-items-center justify-content-md-end">
+        <a href="{% url 'wastage_add' %}" class="btn btn-danger btn-lg shadow-sm">
+            <i class="fa-solid fa-trash-can me-2"></i> Record New Food Wastage
+        </a>
+    </div>
+</div>
+
+<div class="card-box">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="fw-bold m-0 text-dark">Wastage History Log</h5>
+        <a href="{% url 'analytics' %}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-chart-pie me-1"></i> Wastage Analytics</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Ingredient</th>
+                    <th>Wasted Quantity</th>
+                    <th>Reason</th>
+                    <th>Estimated Cost</th>
+                    <th>Reported By</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for w in wastages %}
+                <tr>
+                    <td class="fw-semibold text-dark">{{ w.date|date:"Y-m-d" }}</td>
+                    <td class="fw-bold text-dark">{{ w.ingredient.name }}</td>
+                    <td><span class="text-danger fw-bold fs-6">{{ w.quantity }}</span> {{ w.ingredient.unit }}</td>
+                    <td>
+                        {% if w.reason == 'Expired' %}
+                            <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> Expired</span>
+                        {% elif w.reason == 'Spoiled' %}
+                            <span class="badge bg-danger"><i class="fa-solid fa-bug me-1"></i> Spoiled</span>
+                        {% elif w.reason == 'Over-preparation' %}
+                            <span class="badge bg-info text-dark">Over-preparation</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ w.reason }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="fw-bold text-danger">₹{{ w.estimated_cost }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ w.reported_by.username|default:"Staff" }}</span></td>
+                    <td class="text-muted small">{{ w.notes|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">No food wastage recorded. Great job keeping wastage at zero!</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

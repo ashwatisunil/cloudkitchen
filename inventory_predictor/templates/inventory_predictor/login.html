@@ -1,0 +1,51 @@
+{% extends 'inventory_predictor/base.html' %}
+
+{% block title %}Login - Cloud Kitchen Inventory System{% endblock %}
+
+{% block content %}
+<div class="container min-vh-100 d-flex justify-content-center align-items-center">
+    <div class="card shadow-lg border-0 rounded-4" style="max-width: 420px; width: 100%;">
+        <div class="card-body p-4 p-sm-5">
+            <div class="text-center mb-4">
+                <div class="stat-icon icon-blue mx-auto mb-3" style="width: 64px; height: 64px; font-size: 1.8rem;">
+                    <i class="fa-solid fa-utensils"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-1">Cloud Kitchen Portal</h4>
+                <p class="text-muted small">Inventory & Demand Prediction System</p>
+            </div>
+
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label text-secondary small fw-semibold">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fa-solid fa-user text-muted"></i></span>
+                        <input type="text" name="username" class="form-control" placeholder="Enter username" required autofocus>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-secondary small fw-semibold">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fa-solid fa-lock text-muted"></i></span>
+                        <input type="password" name="password" class="form-control" placeholder="Enter password" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2.5 fw-semibold shadow-sm mb-3">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i> Log In
+                </button>
+            </form>
+
+            <div class="card bg-light border-0 rounded-3 p-3 mt-4">
+                <div class="small fw-bold text-secondary mb-1"><i class="fa-solid fa-key me-1"></i> Demo Credentials:</div>
+                <div class="small text-muted">
+                    <strong>Admin/Manager:</strong> <code>admin</code> / <code>admin123</code><br>
+                    <strong>Staff Member:</strong> <code>staff</code> / <code>staff123</code>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

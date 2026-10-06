@@ -1,0 +1,67 @@
+{% extends 'inventory_predictor/base.html' %}
+
+{% block title %}User Management - Cloud Kitchen{% endblock %}
+{% block page_title %}User Roles & Permissions Management{% endblock %}
+
+{% block content %}
+<div class="card-box">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5 class="fw-bold m-0 text-dark">System Users & Staff Accounts</h5>
+            <p class="text-muted small m-0">Assign user roles (Admin / Kitchen Manager vs Staff Member).</p>
+        </div>
+        <a href="{% url 'user_add' %}" class="btn btn-primary shadow-sm">
+            <i class="fa-solid fa-user-plus me-1"></i> Add New User Account
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Contact Phone</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td class="fw-bold text-dark fs-6">{{ u.username }}</td>
+                    <td>{{ u.get_full_name|default:"-" }}</td>
+                    <td>{{ u.email|default:"-" }}</td>
+                    <td>
+                        {% if u.is_superuser or u.profile.role == 'ADMIN' %}
+                            <span class="badge badge-admin"><i class="fa-solid fa-shield-halved me-1"></i> Admin / Kitchen Manager</span>
+                        {% else %}
+                            <span class="badge badge-staff"><i class="fa-solid fa-user me-1"></i> Kitchen Staff</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ u.profile.phone|default:"-" }}</td>
+                    <td>
+                        {% if u.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Disabled</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u != request.user %}
+                        <a href="{% url 'user_toggle_role' u.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fa-solid fa-rotate me-1"></i> Toggle Role
+                        </a>
+                        {% else %}
+                        <span class="text-muted small">(Current User)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

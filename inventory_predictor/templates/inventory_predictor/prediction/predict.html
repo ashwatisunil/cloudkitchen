@@ -1,0 +1,219 @@
+{% extends 'inventory_predictor/base.html' %}
+
+{% block title %}AI Demand Prediction - Cloud Kitchen{% endblock %}
+{% block page_title %}Machine Learning Menu Demand Prediction{% endblock %}
+
+{% block content %}
+<!-- Top Model Status Card -->
+<div class="card-box bg-dark text-white border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary text-white"><i class="fa-solid fa-brain me-1"></i> Scikit-Learn Model</span>
+                <span class="badge bg-success">Random Forest Regressor</span>
+            </div>
+            <h4 class="fw-bold text-white mb-1">Menu Dish Demand Forecasting Engine</h4>
+            <p class="text-secondary small m-0">Predict future order volumes using historical sales, day-of-week trends, weather, holidays, and promotional events.</p>
+        </div>
+        <div class="d-flex align-items-center gap-3 bg-secondary bg-opacity-25 p-3 rounded-3 border border-secondary border-opacity-25">
+            <div class="text-center">
+                <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">MAE Error</div>
+                <div class="fs-5 fw-bold text-info">{{ model_metrics.mae|default:"3.2" }} units</div>
+            </div>
+            <div class="vr bg-secondary"></div>
+            <div class="text-center">
+                <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">R² Score</div>
+                <div class="fs-5 fw-bold text-success">{{ model_metrics.r2_score|default:"0.89" }}</div>
+            </div>
+            {% if is_admin %}
+            <div class="ms-2">
+                <a href="?action=retrain&date={{ target_date_str }}&weather={{ weather }}&is_holiday={% if is_holiday %}1{% else %}0{% endif %}&special_event={{ special_event }}" class="btn btn-sm btn-outline-light text-nowrap">
+                    <i class="fa-solid fa-rotate me-1"></i> Retrain Model
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Input Parameters Filter Card -->
+<div class="card-box mb-4">
+    <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-sliders text-primary me-2"></i> Forecast Simulation & Feature Parameters</h6>
+    <form method="GET" action="{% url 'demand_prediction' %}" class="row g-3">
+        <div class="col-12 col-md-3">
+            <label class="form-label text-secondary small fw-semibold">Target Forecast Date</label>
+            <input type="date" name="date" value="{{ target_date_str }}" class="form-control">
+        </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label text-secondary small fw-semibold">Weather Forecast</label>
+            <select name="weather" class="form-select">
+                <option value="Sunny" {% if weather == 'Sunny' %}selected{% endif %}>Sunny / Normal</option>
+                <option value="Rainy" {% if weather == 'Rainy' %}selected{% endif %}>Rainy (Delivery Spike)</option>
+                <option value="Cloudy" {% if weather == 'Cloudy' %}selected{% endif %}>Cloudy</option>
+                <option value="Windy" {% if weather == 'Windy' %}selected{% endif %}>Windy</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label text-secondary small fw-semibold">Special Event</label>
+            <select name="special_event" class="form-select">
+                <option value="None" {% if special_event == 'None' %}selected{% endif %}>None (Regular Day)</option>
+                <option value="Festival" {% if special_event == 'Festival' %}selected{% endif %}>Festival Season</option>
+                <option value="Sports Match" {% if special_event == 'Sports Match' %}selected{% endif %}>IPL / Sports Match</option>
+                <option value="Weekend Promo" {% if special_event == 'Weekend Promo' %}selected{% endif %}>Weekend Promo</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-3 d-flex align-items-center pt-3">
+            <div class="form-check">
+                <input type="checkbox" name="is_holiday" value="1" id="holidayCheck" class="form-check-input" {% if is_holiday %}checked{% endif %}>
+                <label for="holidayCheck" class="form-check-label fw-semibold text-dark">Public Holiday</label>
+            </div>
+        </div>
+        <div class="col-12 d-flex justify-content-end gap-2 border-top pt-3">
+            <button type="submit" class="btn btn-primary px-4 shadow-sm">
+                <i class="fa-solid fa-chart-line me-1"></i> Generate AI Demand Prediction
+            </button>
+            <a href="{% url 'reorder_recommendations' %}?date={{ target_date_str }}&weather={{ weather }}&is_holiday={% if is_holiday %}1{% else %}0{% endif %}&special_event={{ special_event }}" class="btn btn-outline-danger">
+                <i class="fa-solid fa-cart-shopping me-1"></i> Calculate Stock Reorder Recommendations &rarr;
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Prediction Visualization Chart -->
+<div class="card-box mb-4">
+    <div class="card-box-header">
+        <h6 class="card-box-title"><i class="fa-solid fa-chart-column text-primary me-2"></i> Predicted Dish Demand for {{ target_date_display }}</h6>
+    </div>
+    <div style="height: 300px;">
+        <canvas id="predictionChart"></canvas>
+    </div>
+</div>
+
+<!-- Prediction Results Table -->
+<div class="card-box mb-4">
+    <div class="card-box-header">
+        <h6 class="card-box-title"><i class="fa-solid fa-table me-2 text-dark"></i> Detailed Itemized Demand Forecast</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Menu Dish</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Target Date & Day</th>
+                    <th>Environmental Inputs</th>
+                    <th>Predicted Demand</th>
+                    <th>Projected Revenue</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in predictions %}
+                <tr>
+                    <td class="fw-bold text-dark fs-6">{{ p.item_name }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ p.category }}</span></td>
+                    <td>₹{{ p.selling_price }}</td>
+                    <td><strong>{{ p.day_name }}</strong> <span class="text-muted small">({{ p.target_date }})</span></td>
+                    <td>
+                        <span class="badge bg-light text-dark border"><i class="fa-solid fa-cloud me-1"></i> {{ p.weather }}</span>
+                        {% if p.is_holiday %}<span class="badge bg-warning text-dark"><i class="fa-solid fa-star me-1"></i> Holiday</span>{% endif %}
+                        {% if p.special_event != 'None' %}<span class="badge bg-info text-dark">{{ p.special_event }}</span>{% endif %}
+                    </td>
+                    <td><span class="badge bg-primary fs-6 px-3 py-1">{{ p.predicted_demand }} orders</span></td>
+                    <td class="fw-bold text-success fs-6">₹{% widthratio p.predicted_demand 1 p.selling_price %}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">No menu items available to generate demand forecast.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Actual vs Predicted Validation (if historical date) -->
+{% if comparison_data %}
+<div class="card-box mb-4">
+    <div class="card-box-header">
+        <h6 class="card-box-title"><i class="fa-solid fa-code-compare me-2 text-info"></i> Actual Sales vs AI Predicted Comparison</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Menu Dish</th>
+                    <th>AI Predicted Demand</th>
+                    <th>Actual Sales Recorded</th>
+                    <th>Prediction Variance (Error)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in comparison_data %}
+                <tr>
+                    <td class="fw-bold text-dark">{{ c.item_name }}</td>
+                    <td><span class="badge bg-primary fs-6">{{ c.predicted }}</span></td>
+                    <td>
+                        {% if c.actual != 'N/A' %}
+                            <span class="badge bg-success fs-6">{{ c.actual }}</span>
+                        {% else %}
+                            <span class="text-muted">N/A (Future Date)</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if c.difference != 'N/A' %}
+                            <span class="{% if c.difference == 0 %}text-success{% elif c.difference > 0 %}text-primary{% else %}text-danger{% endif %} fw-bold">
+                                {{ c.difference }} units
+                            </span>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Disclaimer -->
+<div class="alert alert-light border small text-muted">
+    <i class="fa-solid fa-circle-info me-1 text-primary"></i> <strong>Model Disclaimer:</strong> Demand predictions are probabilistic estimates generated using a Random Forest Regressor trained on historical sales patterns, day-of-week trends, weather, and promotional events. Actual demand may vary based on unforeseen operational conditions.
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const itemNames = {{ item_names_json|safe }};
+    const predValues = {{ pred_values_json|safe }};
+
+    const ctx = document.getElementById('predictionChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: itemNames,
+            datasets: [{
+                label: 'Predicted Demand (Units)',
+                data: predValues,
+                backgroundColor: '#2563eb',
+                borderRadius: 8,
+                barThickness: 32
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' }, title: { display: true, text: 'Expected Quantity' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

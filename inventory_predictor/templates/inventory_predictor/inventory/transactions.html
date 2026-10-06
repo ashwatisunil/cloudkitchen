@@ -1,0 +1,84 @@
+{% extends 'inventory_predictor/base.html' %}
+
+{% block title %}Inventory Transactions Log - Cloud Kitchen{% endblock %}
+{% block page_title %}Inventory Stock History Log{% endblock %}
+
+{% block content %}
+<div class="card-box">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h5 class="fw-bold m-0 text-dark">All Stock Movements</h5>
+            <p class="text-muted small m-0">Complete audit trail of inward purchases, kitchen usage, wastage, and stock adjustments.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'add_stock' %}" class="btn btn-success btn-sm"><i class="fa-solid fa-plus me-1"></i> Inward Stock</a>
+            <a href="{% url 'record_usage' %}" class="btn btn-primary btn-sm"><i class="fa-solid fa-minus me-1"></i> Record Usage</a>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <form method="GET" action="{% url 'inventory_transactions' %}" class="row g-2 mb-4 bg-light p-3 rounded-3 border">
+        <div class="col-12 col-md-4">
+            <select name="type" class="form-select" onchange="this.form.submit()">
+                <option value="">All Transaction Types</option>
+                <option value="PURCHASE" {% if selected_type == 'PURCHASE' %}selected{% endif %}>Stock Purchase (Inward)</option>
+                <option value="USAGE" {% if selected_type == 'USAGE' %}selected{% endif %}>Kitchen Usage (Outward)</option>
+                <option value="WASTAGE" {% if selected_type == 'WASTAGE' %}selected{% endif %}>Wastage Deduction</option>
+                <option value="ADJUSTMENT" {% if selected_type == 'ADJUSTMENT' %}selected{% endif %}>Stock Adjustment</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-2">
+            <a href="{% url 'inventory_transactions' %}" class="btn btn-outline-secondary w-100">Reset Filter</a>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Type</th>
+                    <th>Ingredient</th>
+                    <th>Quantity</th>
+                    <th>Unit Cost</th>
+                    <th>Total Value</th>
+                    <th>Performed By</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in transactions %}
+                <tr>
+                    <td class="text-dark fw-semibold">{{ tx.created_at|date:"Y-m-d H:i" }}</td>
+                    <td>
+                        {% if tx.transaction_type == 'PURCHASE' %}
+                            <span class="badge bg-success"><i class="fa-solid fa-arrow-down me-1"></i> Purchase</span>
+                        {% elif tx.transaction_type == 'USAGE' %}
+                            <span class="badge bg-info text-dark"><i class="fa-solid fa-arrow-up me-1"></i> Usage</span>
+                        {% elif tx.transaction_type == 'WASTAGE' %}
+                            <span class="badge bg-danger"><i class="fa-solid fa-trash me-1"></i> Wastage</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Adjustment</span>
+                        {% endif %}
+                    </td>
+                    <td class="fw-bold text-dark">{{ tx.ingredient.name }}</td>
+                    <td>
+                        <span class="fs-6 fw-bold {% if tx.transaction_type == 'PURCHASE' %}text-success{% else %}text-dark{% endif %}">
+                            {% if tx.transaction_type == 'PURCHASE' %}+{% else %}-{% endif %}{{ tx.quantity }}
+                        </span> {{ tx.ingredient.unit }}
+                    </td>
+                    <td>₹{{ tx.unit_cost }}</td>
+                    <td class="fw-semibold">₹{{ tx.total_cost }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ tx.performed_by.username|default:"System" }}</span></td>
+                    <td class="text-muted small">{{ tx.notes|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">No stock transactions found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
