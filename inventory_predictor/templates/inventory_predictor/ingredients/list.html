@@ -21,7 +21,7 @@
 
     <!-- Search & Filters -->
     <form method="GET" action="{% url 'ingredient_list' %}" class="row g-2 mb-4 bg-light p-3 rounded-3 border">
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
             <input type="text" name="search" value="{{ search_query }}" class="form-control" placeholder="Search ingredient name...">
         </div>
         <div class="col-12 col-md-3">
@@ -33,14 +33,22 @@
             </select>
         </div>
         <div class="col-12 col-md-3">
+            <select name="supplier" class="form-select">
+                <option value="">All Suppliers</option>
+                {% for sup in suppliers %}
+                    <option value="{{ sup.id }}" {% if supplier_filter == sup.id|stringformat:"s" %}selected{% endif %}>{{ sup.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 col-md-2">
             <select name="status" class="form-select">
-                <option value="">All Stock Status</option>
+                <option value="">All Status</option>
                 <option value="low_stock" {% if status_filter == 'low_stock' %}selected{% endif %}>Low Stock Only</option>
                 <option value="expiring" {% if status_filter == 'expiring' %}selected{% endif %}>Expiring Soon</option>
             </select>
         </div>
-        <div class="col-12 col-md-2 d-flex gap-2">
-            <button type="submit" class="btn btn-secondary w-100"><i class="fa-solid fa-filter me-1"></i> Filter</button>
+        <div class="col-12 col-md-1 d-flex gap-1">
+            <button type="submit" class="btn btn-secondary w-100" title="Filter"><i class="fa-solid fa-filter"></i></button>
             <a href="{% url 'ingredient_list' %}" class="btn btn-outline-secondary" title="Reset"><i class="fa-solid fa-rotate-left"></i></a>
         </div>
     </form>

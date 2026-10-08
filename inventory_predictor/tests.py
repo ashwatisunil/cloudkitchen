@@ -103,3 +103,21 @@ class ViewTests(TestCase):
     def test_login_page_renders(self):
         response = self.client.get(reverse('login'))
         self.assertEqual(response.status_code, 200)
+
+    def test_inventory_status_filtered(self):
+        self.client.login(username="admin_test", password="password123")
+        response = self.client.get(reverse('inventory_status') + '?status=low_stock')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['status_filter'], 'low_stock')
+
+    def test_supplier_list_view(self):
+        self.client.login(username="admin_test", password="password123")
+        response = self.client.get(reverse('supplier_list'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_ingredient_list_supplier_filtered(self):
+        self.client.login(username="admin_test", password="password123")
+        sup = Supplier.objects.create(name="Test Vendor")
+        response = self.client.get(reverse('ingredient_list') + f'?supplier={sup.id}')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['supplier_filter'], str(sup.id))

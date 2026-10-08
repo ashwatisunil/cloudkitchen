@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h5 class="fw-bold m-0 text-dark">Approved Vendors & Suppliers</h5>
-            <p class="text-muted small m-0">Manage kitchen raw material supplier contacts and details.</p>
+            <p class="text-muted small m-0">Manage kitchen raw material supplier contacts and view supplied ingredients.</p>
         </div>
         {% if is_admin %}
         <a href="{% url 'supplier_add' %}" class="btn btn-primary shadow-sm">
@@ -38,7 +38,23 @@
                     <td><i class="fa-solid fa-phone text-muted me-1 small"></i> {{ sup.phone|default:"N/A" }}</td>
                     <td><i class="fa-solid fa-envelope text-muted me-1 small"></i> {{ sup.email|default:"N/A" }}</td>
                     <td class="text-muted small">{{ sup.address|default:"N/A" }}</td>
-                    <td><span class="badge bg-light text-dark border">{{ sup.total_ingredients }} Items</span></td>
+                    <td>
+                        {% if sup.total_ingredients > 0 %}
+                            <button type="button" class="btn btn-sm btn-outline-primary shadow-sm rounded-pill px-3 py-1 fw-semibold" data-bs-toggle="modal" data-bs-target="#supplierIngredientsModal{{ sup.id }}">
+                                <i class="fa-solid fa-boxes-stacked me-1"></i> View {{ sup.total_ingredients }} Item{% if sup.total_ingredients != 1 %}s{% endif %}
+                            </button>
+                            <div class="mt-1">
+                                {% for ing in sup.ingredients.all|slice:":2" %}
+                                    <span class="badge bg-light text-dark border me-1 small" style="font-size: 0.72rem;">{{ ing.name }}</span>
+                                {% endfor %}
+                                {% if sup.total_ingredients > 2 %}
+                                    <span class="text-muted small" style="font-size: 0.72rem;">+{{ sup.total_ingredients|add:"-2" }} more</span>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <span class="badge bg-light text-muted border">No Items</span>
+                        {% endif %}
+                    </td>
                     {% if is_admin %}
                     <td>
                         <div class="d-flex gap-1">
@@ -61,4 +77,73 @@
         </table>
     </div>
 </div>
+
+<!-- Supplier Ingredients Modals -->
+{% for sup in suppliers %}
+<div class="modal fade" id="supplierIngredientsModal{{ sup.id }}" tabindex="-1" aria-labelledby="supplierIngredientsModalLabel{{ sup.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold text-dark" id="supplierIngredientsModalLabel{{ sup.id }}">
+                    <i class="fa-solid fa-truck-field text-primary me-2"></i> Ingredients Supplied by {{ sup.name }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3 d-flex flex-wrap gap-3 text-muted small border-bottom pb-3">
+                    <div><i class="fa-solid fa-user me-1"></i> <strong>Contact:</strong> {{ sup.contact_person|default:"N/A" }}</div>
+                    <div><i class="fa-solid fa-phone me-1"></i> <strong>Phone:</strong> {{ sup.phone|default:"N/A" }}</div>
+                    <div><i class="fa-solid fa-envelope me-1"></i> <strong>Email:</strong> {{ sup.email|default:"N/A" }}</div>
+                </div>
+
+                <h6 class="fw-bold mb-3 text-dark">Supplied Raw Materials List ({{ sup.ingredients.all|length }})</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ingredient Name</th>
+                                <th>Category</th>
+                                <th>Current Quantity</th>
+                                <th>Unit Cost</th>
+                                <th>Stock Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ing in sup.ingredients.all %}
+                            <tr>
+                                <td class="fw-bold text-dark">{{ ing.name }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ ing.category }}</span></td>
+                                <td>
+                                    <span class="fw-bold {% if ing.is_low_stock %}text-danger{% else %}text-dark{% endif %}">
+                                        {{ ing.current_quantity }}
+                                    </span> {{ ing.unit }}
+                                </td>
+                                <td>₹{{ ing.unit_cost }}</td>
+                                <td>
+                                    {% if ing.is_low_stock %}
+                                        <span class="badge badge-status badge-low-stock"><i class="fa-solid fa-triangle-exclamation me-1"></i> Low Stock</span>
+                                    {% else %}
+                                        <span class="badge badge-status badge-ok"><i class="fa-solid fa-check me-1"></i> In Stock</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-3 text-muted">No ingredients linked to this supplier yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <a href="{% url 'ingredient_list' %}?supplier={{ sup.id }}" class="btn btn-primary btn-sm">
+                    <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> View in Ingredients Inventory
+                </a>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
 {% endblock %}

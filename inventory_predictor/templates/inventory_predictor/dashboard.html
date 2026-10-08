@@ -18,29 +18,33 @@
     </div>
 
     <div class="col-12 col-sm-6 col-xl-2">
-        <div class="stat-card h-100">
-            <div class="d-flex align-items-center justify-content-between">
-                <span class="stat-label">Low Stock</span>
-                <div class="stat-icon icon-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <a href="{% url 'inventory_status' %}?status=low_stock" class="text-decoration-none">
+            <div class="stat-card stat-card-clickable h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="stat-label fw-bold text-dark">Low Stock</span>
+                    <div class="stat-icon icon-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                </div>
+                <div class="stat-value text-danger">{{ low_stock_count }}</div>
+                <div class="small mt-1 text-danger fw-semibold">
+                    Needs Reorder &rarr;
+                </div>
             </div>
-            <div class="stat-value text-danger">{{ low_stock_count }}</div>
-            <div class="small mt-1 text-danger fw-semibold">
-                <a href="{% url 'ingredient_list' %}?status=low_stock" class="text-danger text-decoration-none">Needs Reorder &rarr;</a>
-            </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-12 col-sm-6 col-xl-2">
-        <div class="stat-card h-100">
-            <div class="d-flex align-items-center justify-content-between">
-                <span class="stat-label">Expiring Soon</span>
-                <div class="stat-icon icon-yellow"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <a href="{% url 'ingredient_list' %}?status=expiring" class="text-decoration-none">
+            <div class="stat-card stat-card-clickable h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="stat-label fw-bold text-dark">Expiring Soon</span>
+                    <div class="stat-icon icon-yellow"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                </div>
+                <div class="stat-value text-warning">{{ expiring_soon_count }}</div>
+                <div class="small mt-1 text-warning fw-semibold">
+                    Within 7 Days &rarr;
+                </div>
             </div>
-            <div class="stat-value text-warning">{{ expiring_soon_count }}</div>
-            <div class="small mt-1 text-warning fw-semibold">
-                <a href="{% url 'ingredient_list' %}?status=expiring" class="text-warning text-decoration-none">Within 7 Days &rarr;</a>
-            </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-12 col-sm-6 col-xl-2">

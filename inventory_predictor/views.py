@@ -143,12 +143,16 @@ def ingredient_list(request):
     search_query = request.GET.get('search', '').strip()
     category_filter = request.GET.get('category', '').strip()
     status_filter = request.GET.get('status', '').strip()
+    supplier_filter = request.GET.get('supplier', '').strip()
 
     if search_query:
         ingredients = ingredients.filter(name__icontains=search_query)
 
     if category_filter:
         ingredients = ingredients.filter(category=category_filter)
+
+    if supplier_filter:
+        ingredients = ingredients.filter(supplier_id=supplier_filter)
 
     ingredients_list = list(ingredients)
     if status_filter == 'low_stock':
@@ -157,13 +161,16 @@ def ingredient_list(request):
         ingredients_list = [i for i in ingredients_list if i.is_expiring_soon]
 
     categories = Ingredient.CATEGORY_CHOICES
+    suppliers = Supplier.objects.all()
 
     context = {
         'ingredients': ingredients_list,
         'categories': categories,
+        'suppliers': suppliers,
         'search_query': search_query,
         'category_filter': category_filter,
         'status_filter': status_filter,
+        'supplier_filter': supplier_filter,
         'is_admin': role_check_admin(request.user)
     }
     return render(request, 'inventory_predictor/ingredients/list.html', context)
@@ -360,7 +367,7 @@ def recipe_delete(request, pk):
 # ==========================================
 @login_required
 def supplier_list(request):
-    suppliers = Supplier.objects.annotate(total_ingredients=Count('ingredients')).all()
+    suppliers = Supplier.objects.prefetch_related('ingredients').annotate(total_ingredients=Count('ingredients')).all()
     return render(request, 'inventory_predictor/suppliers/list.html', {
         'suppliers': suppliers,
         'is_admin': role_check_admin(request.user)
@@ -430,13 +437,22 @@ def supplier_delete(request, pk):
 @login_required
 def inventory_status(request):
     ingredients = Ingredient.objects.select_related('supplier').all()
+    status_filter = request.GET.get('status', '').strip()
+
     total_stock_value = sum(i.total_value for i in ingredients)
     low_stock_count = sum(1 for i in ingredients if i.is_low_stock)
 
+    ingredients_list = list(ingredients)
+    if status_filter == 'low_stock':
+        ingredients_list = [i for i in ingredients_list if i.is_low_stock]
+    elif status_filter == 'normal':
+        ingredients_list = [i for i in ingredients_list if not i.is_low_stock]
+
     context = {
-        'ingredients': ingredients,
+        'ingredients': ingredients_list,
         'total_stock_value': round(total_stock_value, 2),
         'low_stock_count': low_stock_count,
+        'status_filter': status_filter,
         'is_admin': role_check_admin(request.user)
     }
     return render(request, 'inventory_predictor/inventory/status.html', context)
