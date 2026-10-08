@@ -61,9 +61,6 @@
                         <th>Ingredient</th>
                         <th>Category</th>
                         <th>Current Quantity</th>
-                        <th>Min Stock</th>
-                        <th>Unit Price</th>
-                        <th>Stock Valuation</th>
                         <th>Expiry Date</th>
                     </tr>
                 </thead>
@@ -73,13 +70,10 @@
                         <td class="fw-bold text-dark">{{ item.name }}</td>
                         <td>{{ item.category }}</td>
                         <td><strong>{{ item.current_quantity }}</strong> {{ item.unit }}</td>
-                        <td>{{ item.min_stock_level }} {{ item.unit }}</td>
-                        <td>₹{{ item.unit_cost }}</td>
-                        <td>₹{{ item.total_value }}</td>
                         <td>{{ item.expiry_date|default:"N/A" }}</td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="7" class="text-center py-3 text-muted">No data available for this report filter.</td></tr>
+                    <tr><td colspan="4" class="text-center py-3 text-muted">No data available for this report filter.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

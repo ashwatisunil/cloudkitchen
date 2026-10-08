@@ -133,8 +133,14 @@
                 </a>
             </li>
             <li class="sidebar-item">
-                <a href="{% url 'inventory_status' %}" class="sidebar-link {% if 'inventory' in request.resolver_match.url_name or 'add_stock' in request.resolver_match.url_name or 'record_usage' in request.resolver_match.url_name %}active{% endif %}">
+                <a href="{% url 'inventory_status' %}" class="sidebar-link {% if request.resolver_match.url_name == 'inventory_status' or 'add_stock' in request.resolver_match.url_name or 'record_usage' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="fa-solid fa-boxes-stacked"></i>
+                    <span>Stock Overview</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'inventory_transactions' %}" class="sidebar-link {% if request.resolver_match.url_name == 'inventory_transactions' %}active{% endif %}">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
                     <span>Stock Transactions</span>
                 </a>
             </li>

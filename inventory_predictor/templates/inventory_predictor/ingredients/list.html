@@ -8,7 +8,7 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
             <h5 class="fw-bold m-0 text-dark">All Stock Ingredients</h5>
-            <p class="text-muted small m-0">Monitor ingredient stock levels, unit costs, suppliers, and expiry warnings.</p>
+            <p class="text-muted small m-0">Monitor ingredient stock levels, suppliers, and expiry warnings.</p>
         </div>
         {% if is_admin %}
         <div>
@@ -53,8 +53,6 @@
                     <th>Ingredient Name</th>
                     <th>Category</th>
                     <th>Current Quantity</th>
-                    <th>Min / Max Level</th>
-                    <th>Unit Cost</th>
                     <th>Supplier</th>
                     <th>Expiry Date</th>
                     <th>Status</th>
@@ -75,8 +73,6 @@
                         </span> 
                         <span class="text-muted small">{{ ing.unit }}</span>
                     </td>
-                    <td class="text-muted small">Min: {{ ing.min_stock_level }} / Max: {{ ing.max_stock_level }}</td>
-                    <td class="fw-semibold">₹{{ ing.unit_cost }} <span class="text-muted small">/{{ ing.unit }}</span></td>
                     <td>{{ ing.supplier.name|default:"N/A" }}</td>
                     <td>
                         {% if ing.expiry_date %}
@@ -113,7 +109,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="9" class="text-center py-4 text-muted">
+                    <td colspan="7" class="text-center py-4 text-muted">
                         No ingredients found matching your search criteria.
                     </td>
                 </tr>
